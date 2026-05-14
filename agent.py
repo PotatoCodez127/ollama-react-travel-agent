@@ -85,8 +85,8 @@ def run_agent(user_prompt: str):
         
         # 1. Ask the LLM what to do next
         response = client.chat(
-            # model="gemma4:31b-cloud", # Try your stubborn models here!
-            model="ministral-3:14b-cloud",
+            model="gemma4:31b-cloud", # Try your stubborn models here!
+            # model="ministral-3:14b-cloud",
             messages=messages,
             tools=tools_schema
         )
@@ -129,6 +129,8 @@ def run_agent(user_prompt: str):
         if not tool_calls_to_execute:
             print("\n✅ FINAL OUTPUT:")
             print(message['content'])
+            with open("Outputs.txt", "a", encoding="utf-8") as file:
+                file.write(message['content'] + "\n")
             break
             
         # 3. Execute the tools (using our new normalized list)
