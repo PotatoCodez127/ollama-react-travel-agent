@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from dotenv import load_dotenv
 from ollama import Client
 
@@ -84,27 +85,58 @@ def run_agent(user_prompt: str):
         
         # 1. Ask the LLM what to do next
         response = client.chat(
-            model="qwen3:480b-cloud", # Assuming you are using this cloud model
+            # model="gemma4:31b-cloud", # Try your stubborn models here!
+            model="ministral-3:14b-cloud",
             messages=messages,
             tools=tools_schema
         )
         
         message = response['message']
-        messages.append(message) # Save the AI's thought/action to history
+        messages.append(message) 
         
+        # --- THE UNIVERSAL PARSER ENHANCEMENT ---
+        tool_calls_to_execute = []
+
+        # Case A: The model played nice and used the native API structure
+        if message.get('tool_calls'):
+            tool_calls_to_execute = message['tool_calls']
+
+        # Case B: The model went rogue and leaked XML or JSON directly into the text
+        elif message.get('content'):
+            raw_text = message['content']
+            
+            # Catch <tools> JSON </tools> format
+            if "<tools>" in raw_text or "<tool_call>" in raw_text:
+                print("   [DEBUG] Intercepted raw XML tool call!")
+                # Extract anything looking like JSON inside tags
+                matches = re.findall(r'\{.*?\}', raw_text, re.DOTALL)
+                for match in matches:
+                    try:
+                        parsed_tool = json.loads(match)
+                        if "name" in parsed_tool and "arguments" in parsed_tool:
+                            # Format it to match the standard API structure
+                            tool_calls_to_execute.append({
+                                'function': {
+                                    'name': parsed_tool['name'],
+                                    'arguments': parsed_tool['arguments']
+                                }
+                            })
+                    except json.JSONDecodeError:
+                        continue
+        # ----------------------------------------
+
         # 2. Check if the AI decided to use a Tool
-        if not message.get('tool_calls'):
-            # If no tools were called, the AI believes it has the final answer!
+        if not tool_calls_to_execute:
             print("\n✅ FINAL OUTPUT:")
             print(message['content'])
             break
             
-        # 3. Execute the tools the AI requested
-        for tool_call in message['tool_calls']:
+        # 3. Execute the tools (using our new normalized list)
+        for tool_call in tool_calls_to_execute:
             function_name = tool_call['function']['name']
             arguments = tool_call['function']['arguments']
             
-            # Map the LLM's requested function name to our actual Python functions
+            # (The rest of your execution logic remains exactly the same...)
             if function_name == "get_weather":
                 result = get_weather(arguments['destination'])
             elif function_name == "check_flight_price":
@@ -112,7 +144,6 @@ def run_agent(user_prompt: str):
             else:
                 result = "Error: Unknown function."
                 
-            # 4. Feed the tool's result BACK to the LLM as a "tool" role message
             messages.append({
                 "role": "tool",
                 "content": result,
