@@ -1,7 +1,6 @@
 import json
 import os
 import re
-
 from dotenv import load_dotenv
 from ollama import Client
 
@@ -95,7 +94,7 @@ def run_agent(user_prompt: str):
 
         # 1. Ask the LLM what to do next
         response = client.chat(
-            model="gemma4:31b-cloud",  # Try your stubborn models here!
+            model="gemma4:31b-cloud",
             messages=messages,
             tools=tools_schema,
         )
@@ -117,8 +116,23 @@ def run_agent(user_prompt: str):
             # Catch <tools> JSON </tools> format
             if "<tools>" in raw_text or "<tool_call>" in raw_text:
                 print("   [DEBUG] Intercepted raw XML tool call!")
-                # Extract anything looking like JSON inside tags
-                matches = re.findall(r"\{.*?\}", raw_text, re.DOTALL)
+
+                # Top-level brace-tracking stack algorithm to handle nested structures
+                matches = []
+                brace_stack = []
+                start_index = -1
+
+                for idx, char in enumerate(raw_text):
+                    if char == "{":
+                        if not brace_stack:
+                            start_index = idx
+                        brace_stack.append(char)
+                    elif char == "}":
+                        if brace_stack:
+                            brace_stack.pop()
+                            if not brace_stack:
+                                matches.append(raw_text[start_index : idx + 1])
+
                 for match in matches:
                     try:
                         parsed_tool = json.loads(match)
