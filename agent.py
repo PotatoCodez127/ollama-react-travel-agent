@@ -1,6 +1,6 @@
 import json
 import os
-import re
+
 from dotenv import load_dotenv
 from ollama import Client
 
