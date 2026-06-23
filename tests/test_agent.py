@@ -1,5 +1,5 @@
 from unittest.mock import patch
-import pytest
+
 from agent import check_flight_price, get_weather, run_agent
 
 
