@@ -1,0 +1,36 @@
+[project]
+name = "ollama-react-travel-agent"
+version = "0.1.0"
+description = "Institutional-grade autonomous travel agent leveraging the ReAct loop pattern and Ollama."
+dependencies = [
+    "ollama>=0.6.0",
+    "python-dotenv>=1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["agent"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.format]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+known_first_party = ["agent"]
+line_length = 100
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
