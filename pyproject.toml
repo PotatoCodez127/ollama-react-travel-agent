@@ -24,9 +24,6 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
-[tool.ruff.format]
-line-length = 100
-
 [tool.isort]
 profile = "black"
 known_first_party = ["agent"]
